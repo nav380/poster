@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Conference Poster Builder</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Montserrat:wght@400;500;600;700&family=Poppins:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <style>
+    body {
+      font-family: Arial;
+      margin: 0;
+      background: radial-gradient(circle at center, #ffffff 0%, #fff8ee 30%, #f6e3c6 70%);
+    }
+
+    .wrapper {
+      display: flex;
+      height: 100vh
+    }
+
+    .controls {
+      width: 340px;
+      padding: 20px;
+      background: #fff;
+      overflow: auto;
+      border-right: 1px solid #ddd
+    }
+
+    .preview {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .poster {
+      width: 900px;
+      text-align: center
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .title {
+      font-size: 32px;
+      font-weight: 800;
+      color: #226472
+    }
+
+    .tag {
+      background: #e28a45;
+      color: #fff;
+      padding: 10px 30px;
+      border-radius: 25px;
+      display: inline-block;
+      font-size: 26px;
+      margin: 15px
+    }
+
+    .footer {
+      background: #e0803e;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    input,
+    button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px
+    }
+
+    button {
+      cursor: pointer;
+      background: #222;
+      color: #fff;
+      border: none
+    }
+
+    .list-item {
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #f5f7ff;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 28px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="wrapper">
+
+    <!-- CONTROLS -->
+    <div class="controls">
+      <h3>Poster Controls</h3>
+
+      <label>Theme</label>
+      <input placeholder="Theme" oninput="updateText('tag',this.value)">
+
+      <label>Email</label>
+      <input placeholder="Email" oninput="updateText('emailValue',this.value)">
+
+      <!-- ✅ Chairpersons -->
+      <label><input type="checkbox" checked onchange="toggleSection('chair')"> Show Chairpersons</label>
+      <input id="chairInput" placeholder="Chairperson name">
+      <button onclick="addChair()">Add Chairperson</button>
+
+      <!-- ✅ Panelists -->
+      <label><input type="checkbox" checked onchange="toggleSection('panel')"> Show Panelists</label>
+      <input id="panelInput" placeholder="Panelist name">
+      <button onclick="addPanel()">Add Panelist</button>
+
+      <button onclick="exportPoster()">Export Poster</button>
+    </div>
+
+    <!-- POSTER -->
+    <div class="preview">
+      <div id="poster" class="poster">
+
+        <div class="top" style="padding: 10px;">
+          <img src="/logo1.png" style="width:200px">
+
+          <div class="title">
+            <div style="font-size:14px;">LEAD SPONSOR<br><img src="/logo3.png" style="width:150px"></div>
+
+            <div style="font-family:Montserrat;font-size:25px;">
+              <strong>19th Annual Conference<br>Venous Association of India</strong>
+            </div>
+
+            <div style="color:#e9c47f;font-size:20px;">
+              26–28 March 2026 | Goa
+            </div>
+          </div>
+
+          <img src="/logo2.png" style="width:200px">
+        </div>
+
+        <div style="background-image:url('bg2.jpeg');background-size:cover;padding:40px">
+
+          <div id="tag" class="tag">Session Theme</div>
+
+          <!-- Chairpersons -->
+          <div id="chairSection" style="max-width:600px;margin:auto">
+            <h2 id="chairHeader" style="border-bottom:3px solid #0f6bff;font-size:36px">
+              Chairperson
+            </h2>
+            <ul id="chairList" style="list-style:none;padding:0"></ul>
+          </div>
+
+          <!-- Panelists -->
+          <div id="panelSection" style="max-width:600px;margin:auto">
+            <h2 id="panelHeader" style="border-bottom:3px solid #0f6bff;font-size:36px">
+              Panelist
+            </h2>
+            <ul id="panelList" style="list-style:none;padding:0"></ul>
+          </div>
+
+        </div>
+
+        <div class="footer">
+          <div>
+            <strong>Email:</strong>
+            <div id="emailValue">vaicon2026@email.com</div>
+          </div>
+          <img src="/logo4.png" height="40">
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let chairpersons = [];
+    let panelists = [];
+
+    // render
+    function render() {
+      const chairList = document.getElementById("chairList");
+      const panelList = document.getElementById("panelList");
+
+      const chairHeader = document.getElementById("chairHeader");
+      const panelHeader = document.getElementById("panelHeader");
+
+      chairHeader.innerText = chairpersons.length > 1 ? "Chairpersons" : "Chairperson";
+      panelHeader.innerText = panelists.length > 1 ? "Panelists" : "Panelist";
+
+      chairList.innerHTML = chairpersons.map((n, i) => `
+  <li class="list-item">${n}
+    <span class="remove-btn" onclick="removeChair(${i})" style="color:red;cursor:pointer"> ✖</span>
+  </li>
+`).join("");
+
+      panelList.innerHTML = panelists.map((n, i) => `
+  <li class="list-item">${n}
+    <span class="remove-btn" onclick="removePanel(${i})" style="color:red;cursor:pointer"> ✖</span>
+  </li>
+`).join("");
+    }
+
+    // add/remove
+    function addChair() {
+      let v = document.getElementById("chairInput").value.trim();
+      if (v) { chairpersons.push(v); document.getElementById("chairInput").value = ""; render(); }
+    }
+
+    function addPanel() {
+      let v = document.getElementById("panelInput").value.trim();
+      if (v) { panelists.push(v); document.getElementById("panelInput").value = ""; render(); }
+    }
+
+    function removeChair(i) { chairpersons.splice(i, 1); render(); }
+    function removePanel(i) { panelists.splice(i, 1); render(); }
+
+    // toggle
+    function toggleSection(type) {
+      if (type === "chair") {
+        document.getElementById("chairSection").style.display =
+          event.target.checked ? "block" : "none";
+      }
+      if (type === "panel") {
+        document.getElementById("panelSection").style.display =
+          event.target.checked ? "block" : "none";
+      }
+    }
+
+    // text update
+    function updateText(id, val) {
+      document.getElementById(id).innerText = val;
+    }
+
+    // export
+   function exportPoster(){
+  // hide all remove buttons
+  document.querySelectorAll(".remove-btn").forEach(el => el.style.display = "none");
+
+  html2canvas(document.getElementById("poster")).then(canvas=>{
+    let link=document.createElement("a");
+    link.download="poster.png";
+    link.href=canvas.toDataURL();
+    link.click();
+
+    // show them again after export
+    document.querySelectorAll(".remove-btn").forEach(el => el.style.display = "inline");
+  });
+}
+    render();
+  </script>
+
+</body>
+
+</html>
